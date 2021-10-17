@@ -4,7 +4,6 @@
 const { CommandInteraction, MessageEmbed } = require('discord.js')
 const utils = require('../../utils')
 const cheerio = require('cheerio')
-const { stateOptions } = require('../../config/covid.json')
 
 module.exports = {
   name: 'covid',
@@ -15,9 +14,6 @@ module.exports = {
     type: 'STRING',
     required: true,
     choices: [{
-      name: 'Not Valid',
-      value: 'invalid'
-    }, {
       name: 'Australia',
       value: '0'
     }, {
@@ -53,32 +49,56 @@ module.exports = {
   async execute (interaction) {
     const stateName = interaction.options.getString('state')
 
-   if (stateOptions[stateName]) { // Redundant if statement
-     
-      const covidData = await utils.request('https://covidlive.com.au/covid-live.json')
-      const obj = JSON.stringify(covidData[stateName]) // Is this the right syntax?
-      console.log(obj) // Returns "R"
-      
-      /* Just pretend this bit isn't here, first I need to actually get the data I want before I make it look pretty!
-      const data = await utils.getData('covid', stateName, stateOptions[stateName], 1000 * 60 * 10)
+    const covidData = await utils.request('https://covidlive.com.au/covid-live.json')
+    const obj = await JSON.parse(covidData)
+    const newTest = obj[stateName].TEST_CNT - obj[stateName].PREV_TEST_CNT
+    const newDeaths = obj[stateName].DEATH_CNT - obj[stateName].PREV_DEATH_CNT
+    const newVaccine = obj[stateName].VACC_DOSE_CNT - obj[stateName].PREV_VACC_DOSE_CNT
 
-      const stateResponse = new MessageEmbed()
-        .setColor('PURPLE')
-        .setAuthor('Covid Information', 'https://i.imgur.com/5OJw0j7.png')
-        .setTitle(`${stateOptions[stateName]} COVID Information`)
-        .setThumbnail('https://i.imgur.com/5OJw0j7.png')
-        .setFields(data.fields)
-        .setTimestamp(data.updatedTime)
-        .setFooter(data.footer)
-      interaction.reply({ embeds: [stateResponse] })
-    } else {
-      interaction.reply({ embeds: [new MessageEmbed().setTitle('ERROR').setDescription('Support for that state is currently unavailable')] })
-    } */
-     
-     
-      interaction.reply({ embeds: [new MessageEmbed().setTitle('State Chosen').setDescription(`${stateOptions[stateName]}, ${obj.field[stateName]}`)] })
-    } else {
-      interaction.reply({ embeds: [new MessageEmbed().setTitle('You are stupid')] })
-    }
+    const stateResponse = new MessageEmbed()
+      .setColor('PURPLE')
+      .setAuthor('Covid Information', 'https://i.imgur.com/5OJw0j7.png')
+      .setTitle(`${obj[stateName].CODE} COVID Information`)
+      .setThumbnail('https://i.imgur.com/5OJw0j7.png')
+      .setFields([{
+        name: 'Total Cases',
+        value: `${obj[stateName].CASE_CNT}`,
+        inline: true
+      }, {
+        name: 'Active Cases',
+        value: `${obj[stateName].ACTIVE_CNT}`,
+        inline: true
+      }, {
+        name: 'Total Deaths',
+        value: `${obj[stateName].DEATH_CNT}`,
+        inline: true
+      }, {
+        name: 'New Local Cases (Last 24h)',
+        value: `${obj[stateName].NEW_CASE_CNT}`,
+        inline: true
+      }, {
+        name: 'Tests (Last 24h)',
+        value: `${newTest}`,
+        inline: true
+      }, {
+        name: 'Deaths (Last 24h)',
+        value: `${newDeaths}`,
+        inline: true
+      }, {
+        name: 'Recovered',
+        value: `${obj[stateName].RECOV_CNT}`,
+        inline: true
+      }, {
+        name: 'New Vaccine Doses (Last 24h)',
+        value: `${newVaccine}`,
+        inline: true
+      }, {
+        name: 'Total Vaccine Doses',
+        value: `${obj[stateName].VACC_DOSE_CNT}`,
+        inline: true
+      }])
+      .setTimestamp(obj[stateName].LAST_UPDATED_DATE)
+      .setFooter('Data from Covid Live (https://covidlive.com.au)')
+    interaction.reply({ embeds: [stateResponse] })
   }
 }
