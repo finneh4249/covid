@@ -2,7 +2,7 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable max-len */
 const { CommandInteraction, MessageEmbed } = require('discord.js')
-const utils = require('../../utils')
+const utils = require('../../utils') // Place in bot root!
 const cheerio = require('cheerio')
 
 module.exports = {
@@ -51,6 +51,7 @@ module.exports = {
 
     const covidData = await utils.request('https://covidlive.com.au/covid-live.json')
     const obj = await JSON.parse(covidData)
+    // Now we do some fancy math to get the correct data!
     const newTest = obj[stateName].TEST_CNT - obj[stateName].PREV_TEST_CNT
     const newDeaths = obj[stateName].DEATH_CNT - obj[stateName].PREV_DEATH_CNT
     const newVaccine = obj[stateName].VACC_DOSE_CNT - obj[stateName].PREV_VACC_DOSE_CNT
